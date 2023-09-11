@@ -3,36 +3,45 @@
 [![](https://img.shields.io/badge/Open_in_DevExpress_Support_Center-FF7200?style=flat-square&logo=DevExpress&logoColor=white)](https://supportcenter.devexpress.com/ticket/details/E1378)
 [![](https://img.shields.io/badge/📖_How_to_use_DevExpress_Examples-e9f6fc?style=flat-square)](https://docs.devexpress.com/GeneralInformation/403183)
 <!-- default badges end -->
-<!-- default file list -->
-*Files to look at*:
+
+# WinForms Data Grid - Implement a single button click in multiple selection mode
+
+This sample shows how to force the `ButtonClick` event for a cell editor when the user clicks the editor button (in this example, the dropdown button). The example handles the `GridView.MouseDown` event to obtain hit information under the mouse cursor, activate the cell editor, and determine whether the editor button is pressed:
+
+```csharp
+private void gridView1_MouseDown(object sender, MouseEventArgs e) {
+    if ((Control.ModifierKeys & Keys.Control) != Keys.Control) {
+        GridView view = sender as GridView;
+        GridHitInfo hi = view.CalcHitInfo(e.Location);
+        if (hi.InRowCell) {
+            if (hi.Column.RealColumnEdit.GetType() == typeof(RepositoryItemComboBox)) {
+                view.FocusedRowHandle = hi.RowHandle;
+                view.FocusedColumn = hi.Column;
+                view.ShowEditor();
+                // Forces button click. 
+                ButtonEdit edit = (view.ActiveEditor as ComboBoxEdit);
+                Point p = view.GridControl.PointToScreen(e.Location);
+                p = edit.PointToClient(p);
+                EditHitInfo ehi = (edit.GetViewInfo() as ButtonEditViewInfo).CalcHitInfo(p);
+                if (ehi.HitTest == EditHitTest.Button) {
+                    ((ComboBoxEdit)view.ActiveEditor).ShowPopup();
+                    PerformClick(edit, new ButtonPressedEventArgs(ehi.HitObject as EditorButton));
+                    ((DevExpress.Utils.DXMouseEventArgs)e).Handled = true;
+                }
+            }
+        }
+    }
+}
+void PerformClick(ButtonEdit editor, ButtonPressedEventArgs e) {
+    if (editor == null || e == null) return;
+    MethodInfo mi = typeof(RepositoryItemButtonEdit).GetMethod("RaiseButtonClick",
+        BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+    if (mi != null)
+        mi.Invoke(editor.Properties, new object[] { e });
+}
+```
+
+
+## Files to Review
 
 * [Form1.cs](./CS/WindowsApplication168/Form1.cs) (VB: [Form1.vb](./VB/WindowsApplication168/Form1.vb))
-* [Program.cs](./CS/WindowsApplication168/Program.cs) (VB: [Program.vb](./VB/WindowsApplication168/Program.vb))
-<!-- default file list end -->
-# How to implement a single button click in multiple selection mode
-
-
-<p>This sample illustrates how to force the ButtonClick event for an in-place editor when a user performs a single click. The grid works in CellSelect multiple selection mode and it's necessary to keep selection when a user clicks a button. <br />
-To accomplish this task handle the GridView.MouseDown event. Based on the hit information it's possible to define a cell under the mouse cursor, activate it and detect if the editor's button should be clicked. Finally, the default event handler is locked using the following code:</p>
-
-```cs
-<newline/>
-(e as DevExpress.Utils.DXMouseEventArgs).Handled = true;<newline/>
-
-```
-
-
-
-```vb
-<newline/>
-TryCast(e, DevExpress.Utils.DXMouseEventArgs).Handled = True<newline/>
-
-```
-
-<br />
-<br />
-
-
-<br/>
-
-
